@@ -1,0 +1,44 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/wait.h>
+
+#define SHM_SIZE 1024
+
+int main() {
+    int shmid;
+    char *data;
+
+    shmid = shmget(IPC_PRIVATE, SHM_SIZE, IPC_CREAT | 0666);
+
+    data = (char *)shmat(shmid, NULL, 0);
+
+    pid_t pid = fork();
+
+    if (pid > 0) {
+        strcpy(data, "ABCDEFGHIJ");
+
+        printf("PARENT PROCESS WRITING:\n");
+        printf("%s\n\n", data);
+
+        wait(NULL);
+
+        shmdt(data);
+        shmctl(shmid, IPC_RMID, NULL);
+    }
+    else {
+        sleep(1);
+
+        printf("CHILD PROCESS READING:\n");
+        printf("%s\n", data);
+
+        shmdt(data);
+        exit(0);
+    }
+
+    return 0;
+}
